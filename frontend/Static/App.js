@@ -1,7 +1,6 @@
 (function(){
 'use strict';
 
-/* ================= Helpers ================= */
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const n0=n=>Number(n).toLocaleString('en-US');
@@ -55,14 +54,13 @@ const ic=(n,s=20)=>'<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24
 const ST={ok:'Khỏe mạnh',warn:'Cần theo dõi',bad:'Có vấn đề'};
 const st=(k,label)=>'<span class="st '+k+'"><i></i>'+esc(label||ST[k])+'</span>';
 
-/* ================= Mock data (thay bằng API / cảm biến thật) ================= */
 const pad12=a=>a.concat(Array(12-a.length).fill(null));
 const MONTHS=['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
 const DATA={
   farm:{location:'Long Khánh, Đồng Nai',temp:28,hum:72,weather:'Nắng'},
   colonies:pad12([78,82,86,91,96,101,106,111,116,128]),
-  honey:pad12([150,190,280,410,470,330,210,189,293,318]),         // kg
-  revenue:pad12([9.8,12.4,18.2,26.9,31.9,21.5,13.8,12.3,18.7,21.0]), // triệu VNĐ
+  honey:pad12([150,190,280,410,470,330,210,189,293,318]),
+  revenue:pad12([9.8,12.4,18.2,26.9,31.9,21.5,13.8,12.3,18.7,21.0]),
   expense:pad12([5.4,5.1,6.0,7.8,8.6,7.2,6.0,5.9,8.1,12.3]),
   expCat:{'Thiết bị':24.6,'Nhân công':21.0,'Chăm sóc':14.2,'Đóng gói':7.6,'Khác':5.0}
 };
@@ -80,10 +78,9 @@ const TXNS=[
 ];
 const CATCOL={'Thiết bị':'--r1','Vật tư':'--r2','Nhân công':'--r2','Chăm sóc':'--r3','Đóng gói':'--r4','Bảo trì':'--r5','Khác':'--r6'};
 
-/* ---- Thùng ong ---- */
 const ZONES=['A','B','C','D'];
 const BREEDS=['Ong Ý','Ong nội','Ong Carnica'];
-const ISSUE={ // số thùng: [vấn đề, mức độ, số phút trước]
+const ISSUE={
   23:['Nhiệt độ cao','bad',10],41:['Độ ẩm bất thường','warn',35],78:['Hoạt động giảm','warn',60],
   49:['Phát hiện sâu ngài sáp','bad',130],9:['Nhiệt độ cao nhẹ','warn',155],71:['Nhiệt độ thấp','bad',190],
   56:['Hoạt động giảm','warn',220],88:['Phát hiện kiến','bad',250],62:['Độ ẩm bất thường','warn',280],
@@ -132,8 +129,6 @@ const HIVES=(function(){
   return out;
 })();
 
-/* ---- Kho hàng ---- */
-// [tên, loại, số lượng, đơn vị, ngưỡng nhắc, đơn giá VNĐ]
 const ITEM_SRC=[
  ['Thùng ong','Thiết bị',25,'cái',10,520000],['Khung cầu','Vật tư',120,'cái',40,22000],['Đường','Chăm sóc',18,'kg',30,22000],['Lọ mật ong 500ml','Đóng gói',5,'thùng',20,180000],
  ['Camera giám sát thùng','Thiết bị',8,'cái',4,650000],['Cảm biến nhiệt ẩm','Thiết bị',40,'cái',15,85000],['Máy quay mật','Thiết bị',2,'cái',1,5800000],['Dao cắt nắp mật','Thiết bị',6,'cái',3,120000],['Bình xì khói','Thiết bị',5,'cái',2,180000],['Mũ bảo hộ','Thiết bị',10,'cái',5,150000],['Găng tay nuôi ong','Thiết bị',6,'đôi',8,60000],['Bàn chải quét ong','Thiết bị',12,'cái',5,35000],['Máng cho ăn trong thùng','Thiết bị',60,'cái',20,25000],
@@ -145,7 +140,6 @@ const ITEM_SRC=[
 ];
 const ITEMS=ITEM_SRC.map((a,i)=>({code:'VT'+String(i+1).padStart(3,'0'),name:a[0],cat:a[1],qty:a[2],unit:a[3],min:a[4],price:a[5]}));
 const CATS=['Thiết bị','Vật tư','Chăm sóc','Đóng gói'];
-/* Nhãn hiển thị thống nhất (giá trị lọc vẫn là chuỗi gốc trong CATS) */
 const CATVIS={'Chăm sóc':{label:'Thức ăn & Dinh dưỡng'},'Vật tư':{label:'Vật tư nuôi ong'},'Đóng gói':{label:'Bao bì & Đóng gói'},'Thiết bị':{label:'Thiết bị & Máy móc'}};
 const catVis=c=>CATVIS[c]||{label:c};
 const INV_PAGE=4;
@@ -164,7 +158,6 @@ const INV_LOG=[
   {ts:day('2026-09-22'),t:'in', code:'VT031',qty:12}
 ];
 
-/* ================= State ================= */
 const state={
   route:{name:'home'},
   from:null,
@@ -184,7 +177,6 @@ const state={
 };
 let charts=[];
 
-/* ================= Derived ================= */
 const counts=()=>{const c={ok:0,warn:0,bad:0};HIVES.forEach(h=>c[h.status]++);return c};
 const issueHives=()=>HIVES.filter(h=>h.issue).sort((a,b)=>a.mins-b.mins);
 const finTotals=()=>{const rev=sumA(DATA.revenue),exp=sumA(DATA.expense);return{rev:rev,exp:exp,profit:r1(rev-exp)}};
@@ -193,7 +185,6 @@ const bellCount=()=>counts().bad+ITEMS.filter(i=>stockSt(i)==='bad').length;
 const weekday=['Chủ nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
 const todayLabel=()=>{const d=new Date();return weekday[d.getDay()]+', '+d2(d.getDate())+'/'+d2(d.getMonth()+1)+'/'+d.getFullYear()};
 
-/* ================= Charts ================= */
 function baseOpts(extra){
   const muted=css('--muted'),line=css('--line');
   const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -213,7 +204,6 @@ function donut(id,labels,vals,colors){
     options:{responsive:true,maintainAspectRatio:false,cutout:'66%',plugins:{legend:{display:false}},animation:{duration:300}}});
 }
 
-/* ================= Pages ================= */
 function pageHome(){
   const c=counts(), ci=lastIdx(DATA.colonies), hi=lastIdx(DATA.honey), ri=lastIdx(DATA.revenue);
   const colonies=DATA.colonies[ci], honey=sumA(DATA.honey), rev=sumA(DATA.revenue), avg=honey/colonies;
@@ -260,7 +250,6 @@ function setupHome(){
   donut('chSt',['Khỏe mạnh','Cần theo dõi','Có vấn đề'],[c.ok,c.warn,c.bad],[css('--ok'),css('--warn'),css('--bad')]);
 }
 
-/* ---- Quản lý đàn ong ---- */
 function hiveMatch(h){
   const f=state.hq,q=f.q.trim().toLowerCase();
   if(q&&!(h.id.toLowerCase().includes(q)||String(h.n)===q.replace(/\D/g,'')&&/\d/.test(q)))return false;
@@ -354,7 +343,6 @@ function pageHives(){
     <div class="hint" style="margin-top:10px">Tuổi đàn trung bình: ${avgAge.toFixed(1)} tháng</div></section>`;
 }
 
-/* ---- Chi tiết thùng ---- */
 function detSVG(d,hive){
   const bodies={
     moth:'<ellipse cx="150" cy="108" rx="22" ry="9" fill="#d3c2a0"/><path d="M140 103q-34-26-46-6q10 22 46 12zM160 103q34-26 46-6q-10 22-46 12z" fill="#b9a67f" opacity=".9"/>',
@@ -451,7 +439,6 @@ function drawHiveChart(h){
     {label:'Độ ẩm (%)',data:s.H,yAxisID:'y1',borderColor:css('--c-blue'),backgroundColor:css('--c-blue'),borderWidth:2,tension:.3,pointRadius:0,pointHoverRadius:4}]},options:o});
 }
 
-/* ---- Tài chính ---- */
 function finFormHTML(){
   const t=state.fin.type, cats=t==='in'?INCOME_CATS:EXPENSE_CATS;
   return `<h2>Ghi nhận giao dịch</h2>
@@ -499,7 +486,6 @@ function drawExpDonut(){
   donut('chExp',k,k.map(x=>DATA.expCat[x]),k.map(x=>css(CATCOL[x])));
 }
 
-/* ---- Kho hàng ---- */
 function invFiltered(){
   const f=state.inv,q=f.q.trim().toLowerCase(),o={bad:0,warn:1,ok:2};
   const a=ITEMS.filter(i=>(f.cat==='all'||i.cat===f.cat)&&(f.st==='all'||stockSt(i)===f.st)&&(!q||(i.name+' '+i.code).toLowerCase().includes(q)));
@@ -597,7 +583,6 @@ function setupInventory(){
   donut('chCat',CATS,cv,CATS.map(c=>css(CATCOL[c])));
 }
 
-/* ---- Tài khoản ---- */
 const initials=n=>{const p=String(n).trim().split(/\s+/);return((p[0]||'?')[0]+(p.length>1?p[p.length-1][0]:'')).toUpperCase()};
 const maskPhone=p=>{const s=String(p).replace(/\D/g,'');return s.length>=6?s.slice(0,3)+'• ••• '+s.slice(-3):s};
 const swRow=(k,label,sub,on)=>`<button class="actrow" data-act="sw" data-k="${k}" data-l="${esc(label)}" role="switch" aria-checked="${on}"><span><b>${label}</b><span class="m">${sub}</span></span><span class="swt${on?' on':''}"><span class="swk"></span></span></button>`;
@@ -711,9 +696,9 @@ function exportCSV(){
   toast('Đã xuất tệp CSV');
 }
 
-/* ================= Overlays ================= */
 const logoMark=()=>'<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l9.2 5.1v10.2L12 22.2l-9.2-5.1V6.9z" fill="currentColor"/><path d="M12 7l4.6 2.6v5.2L12 17.4l-4.6-2.6V9.6z" fill="var(--brand)"/></svg>';
 function openSheet(html){const s=$('#sheet');s.innerHTML='<div class="grab"></div>'+html;s.classList.add('on');$('#scrim').classList.add('on');s.scrollTop=0}
+const sheetHead=t=>`<div class="hd"><h3>${t}</h3><button class="ibtn" data-act="close-all" aria-label="Đóng">${ic('close',20)}</button></div>`;
 function closeAll(){$('#sheet').classList.remove('on');$('#scrim').classList.remove('on')}
 function camSheet(){
   openSheet(`<h3>Máy ảnh</h3>
@@ -738,7 +723,6 @@ function bellSheet(){
 let toastT;
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2200)}
 
-/* ================= Router ================= */
 function render(){
   charts.forEach(c=>{try{c.destroy()}catch(e){}});charts=[];
   const r=state.route, main=$('#main');let html='';
@@ -766,7 +750,6 @@ function go(spec){
   closeAll();render();window.scrollTo(0,0);
 }
 
-/* ================= Events ================= */
 document.addEventListener('click',function(e){
   const t=e.target.closest('[data-go],[data-act]');if(!t)return;
   if(t.dataset.go){go(t.dataset.go);return}
@@ -792,20 +775,20 @@ document.addEventListener('click',function(e){
     case 'view':state.hq.view=v;updateHiveView();break;
     case 'issues-open':{
       const iss=issueHives(), nb=iss.filter(x=>x.status==='bad').length;
-      openSheet(`<div class="hd"><h3>Các thùng có vấn đề</h3><button class="ibtn" data-act="close-all" aria-label="Đóng">${ic('close',20)}</button></div>
+      openSheet(sheetHead('Các thùng có vấn đề')+`
       <div class="hint">${iss.length} thùng: ${nb} có vấn đề · ${iss.length-nb} cần theo dõi</div>
       <div style="margin-top:4px">${issuesHTML(9999)}</div>`);
       break}
     case 'range':state.range=v;$$('[data-act="range"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));drawHiveChart(HIVES[state.route.id-1]);break;
     case 'copy-qr':{
       const txt='vietbee://hive/'+HIVES[state.route.id-1].id;
-      try{navigator.clipboard.writeText(txt).then(()=>toast('Đã sao chép mã'),()=>toast(txt))}catch(err){toast(txt)}
+      try{navigator.clipboard.writeText(txt).then(()=>toast('Đã sao chép mã'),()=>toast(txt))}catch{toast(txt)}
       break}
     case 'save-rec':saveRecord();break;
     case 'fin-type':state.fin.type=v;$('#finForm').innerHTML=finFormHTML();break;
     case 'fin-save':saveTxn();break;
     case 'txn-open':
-      openSheet(`<div class="hd"><h3>Lịch sử giao dịch</h3><button class="ibtn" data-act="close-all" aria-label="Đóng">${ic('close',20)}</button></div>
+      openSheet(sheetHead('Lịch sử giao dịch')+`
       <div class="hint">${TXNS.length} giao dịch · đơn vị triệu VNĐ</div>
       <div style="margin-top:4px">${txnHTML(9999)}</div>`);
       break;
@@ -819,7 +802,7 @@ document.addEventListener('click',function(e){
     case 'inv-menu':{const it=byCode(t.dataset.code);if(!it)break;openSheet(`<h3>${esc(it.name)}</h3><div class="hint" style="margin-top:6px">${it.code} · ${catVis(it.cat).label}</div><div style="margin-top:14px"><button class="btn ghost" data-act="inv-min" data-code="${it.code}">Đặt ngưỡng</button><div class="mdiv"></div><button class="btn ghost mbtn-danger" data-act="inv-del" data-code="${it.code}">Xóa</button></div>`);break}
     case 'inv-tab':{state.inv.tab=v;state.inv.newItem=false;const iv=$('#iItem');state.inv.pre=iv&&byCode(iv.value)?iv.value:'';$('#invFormBody').innerHTML=invFormHTML();break}
     case 'invalert-open':
-      openSheet(`<div class="hd"><h3>Cảnh báo tồn kho</h3><button class="ibtn" data-act="close-all" aria-label="Đóng">${ic('close',20)}</button></div>
+      openSheet(sheetHead('Cảnh báo tồn kho')+`
       <div class="hint">${ITEMS.filter(i=>stockSt(i)!=='ok').length} mặt hàng dưới ngưỡng</div>
       <div style="margin-top:4px">${invAlertsHTML(9999)}</div>`);
       break;
@@ -828,12 +811,12 @@ document.addEventListener('click',function(e){
     case 'hist-filter':state.inv.hf=v;$$('[data-act="hist-filter"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));$('#invHist').innerHTML=invHistHTML();if($('#sheetInvHist'))$('#sheetInvHist').innerHTML=invHistHTML(9999);break;
     case 'hist-open':{
       const h=HIVES[state.route.id-1];if(!h)break;
-      openSheet(`<div class="hd"><h3>Lịch sử ghi nhận</h3><button class="ibtn" data-act="close-all" aria-label="Đóng">${ic('close',20)}</button></div>
+      openSheet(sheetHead('Lịch sử ghi nhận')+`
       <div class="hint">${h.id} · Khu ${h.zone} · ${h.hist.length} ghi nhận</div>
       <div id="sheetHist">${histHTML(h,9999)}</div>`);
       break}
     case 'invhist-open':
-      openSheet(`<div class="hd"><h3>Lịch sử kho</h3><button class="ibtn" data-act="close-all" aria-label="Đóng">${ic('close',20)}</button></div>
+      openSheet(sheetHead('Lịch sử kho')+`
       <div class="seg" role="group" aria-label="Lọc lịch sử" style="margin-top:8px">${[['all','Tất cả'],['in','Nhập'],['out','Xuất']].map(x=>`<button data-act="hist-filter" data-v="${x[0]}" aria-pressed="${state.inv.hf===x[0]}">${x[1]}</button>`).join('')}</div>
       <div id="sheetInvHist" style="margin-top:4px">${invHistHTML(9999)}</div>`);
       break;
@@ -894,7 +877,6 @@ document.addEventListener('change',function(e){
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAll()});
 
-/* ================= Actions ================= */
 function whenOf(dateStr){return dateStr===isoDay(Date.now())?Date.now():day(dateStr)}
 function saveRecord(){
   const h=HIVES[state.route.id-1],type=$('#rType').value,note=$('#rNote').value.trim(),date=$('#rDate').value,y=parseFloat($('#rYield').value),err=$('#rErr');
@@ -933,7 +915,7 @@ function saveStock(){
   const f=state.inv,t=f.tab,it=byCode($('#iItem').value),qty=parseInt($('#iQty').value,10),date=$('#iDate').value,err=$('#iErr');
   if(!(qty>0)){err.textContent='Nhập số lượng lớn hơn 0.';return}
   if(!date){err.textContent='Chọn ngày.';return}
-  if(t==='in'&&!it){ // khởi tạo mặt hàng mới
+  if(t==='in'&&!it){
     const name=$('#iNewName').value.trim(),unit=$('#iNewUnit').value.trim(),minRaw=String($('#iMin').value).trim(),minV=minRaw===''?0:parseInt(minRaw,10);
     const cat=$('#iNewCat')?$('#iNewCat').value:(f.fcat!=='all'?f.fcat:null);
     if(!name){err.textContent='Nhập tên hàng mới.';return}
@@ -966,7 +948,6 @@ function saveStock(){
   render();
 }
 
-/* ================= Init ================= */
 $('#bellBtn').insertAdjacentHTML('afterbegin',ic('bell',22));
 $('#userBtn').insertAdjacentHTML('afterbegin',ic('user',22));
 $('#logo').innerHTML=logoMark()+'VietBee';

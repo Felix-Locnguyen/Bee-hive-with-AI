@@ -1,5 +1,3 @@
-from datetime import timezone
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -9,17 +7,15 @@ from app.models.hive import Hive
 from app.models.alert import Alert
 from app.schemas.alert import AlertCreate, AlertRead, AlertUpdate
 
+from app.api._common import ensure_utc, get_or_404
+
 router = APIRouter(prefix="/api/alerts", tags=["Alerts"])
 
-# kiem tra id canh bao co ton tai khong
-def _get_or_404(db:Session, alert_id:int) -> Alert:
-    alert = db.get(Alert, alert_id)
-    if not alert:
-        raise HTTPException(status_code=404, detail=f"khong tin thay alert id = {alert_id}")
-    return alert
+
+def _get_or_404(db: Session, alert_id: int) -> Alert:
+    return get_or_404(db, Alert, alert_id, "alert")
 
 
-# So canh bao chua doc — day len badge 🔔 tren header
 @router.get("/count")
 def alert_count(hive_id: int | None = None, db: Session = Depends(get_db)):
     """GET /api/alerts/count — {"unread": n, "bad_unread": m} cho badge bellCount()."""
@@ -31,7 +27,6 @@ def alert_count(hive_id: int | None = None, db: Session = Depends(get_db)):
     return {"unread": unread, "bad_unread": bad_unread}
 
 
-# Danh sach canh bao — filter nhu filter dashboard
 @router.get("", response_model=list[AlertRead])
 def list_alerts(
     hive_id: int | None = None,
@@ -47,20 +42,17 @@ def list_alerts(
     if severity:
         stmt = stmt.where(Alert.severity == severity)
     if unread is True:
-        stmt = stmt.where(Alert.is_read.is_(False))  # ?unread=true  -> canh bao CHUA doc
+        stmt = stmt.where(Alert.is_read.is_(False))
     elif unread is False:
-        stmt = stmt.where(Alert.is_read.is_(True))   # ?unread=false -> canh bao DA doc
-    # canh bao moi nhat len truoc
+        stmt = stmt.where(Alert.is_read.is_(True))
     return db.scalars(stmt.order_by(Alert.created_at.desc()).limit(limit)).all()
 
 
-# Lay 1 canh bao
 @router.get("/{alert_id}", response_model=AlertRead)
 def get_alert(alert_id: int, db: Session = Depends(get_db)):
     return _get_or_404(db, alert_id)
 
 
-# Tao canh bao (tu sensor / AI / nguoi dung)
 @router.post("", response_model=AlertRead, status_code=201)
 def create_alert(data: AlertCreate, db: Session = Depends(get_db)):
     if db.get(Hive, data.hive_id) is None:
@@ -72,14 +64,12 @@ def create_alert(data: AlertCreate, db: Session = Depends(get_db)):
     return alert
 
 
-# Cap nhat trang thai: da doc? da xu ly xong luc nao?
 @router.put("/{alert_id}", response_model=AlertRead)
 def update_alert(alert_id: int, data: AlertUpdate, db: Session = Depends(get_db)):
     alert = _get_or_404(db, alert_id)
     fields = data.model_dump(exclude_unset=True)
-    when = fields.get("resolved_at")
-    if when is not None and when.tzinfo is None:
-        fields["resolved_at"] = when.replace(tzinfo=timezone.utc)  # quy uoc UTC (Cach B)
+    if "resolved_at" in fields:
+        fields["resolved_at"] = ensure_utc(fields["resolved_at"])
     for key, value in fields.items():
         setattr(alert, key, value)
     db.commit()
@@ -87,7 +77,6 @@ def update_alert(alert_id: int, data: AlertUpdate, db: Session = Depends(get_db)
     return alert
 
 
-# Xoa canh bao
 @router.delete("/{alert_id}")
 def delete_alert(alert_id: int, db: Session = Depends(get_db)):
     alert = _get_or_404(db, alert_id)

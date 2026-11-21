@@ -1,10 +1,8 @@
 from datetime import datetime, date
 from pydantic import BaseModel, Field
 
-# ZONE_PATTERN = "^(A|B|C|D)$"
 STATUS_PATTERN = "^(ok|watch|bad)$"
 
-# tao thong tin thung ong
 class HiveCreate(BaseModel):
     farm_id: int
     code: str = Field(min_length=1, max_length=10)
@@ -17,7 +15,6 @@ class HiveCreate(BaseModel):
     last_check: date | None = None
 
 
-# cap nhat hong tin thung ong
 class HiveUpdate(BaseModel):
     farm_id: int | None = None
     code: str | None = Field(default=None, min_length=1, max_length=10)
@@ -30,7 +27,6 @@ class HiveUpdate(BaseModel):
     last_check: date | None = None
 
 
-# doc du lieu tu thung ong 
 class HiveRead(BaseModel):
     id: int
     farm_id: int
