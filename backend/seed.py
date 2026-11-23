@@ -50,7 +50,7 @@ RECORDS_V12 = [
 ALERTS_SEED = [
     (12,  "bad",   "sensor", "Mật ong chua — nhiệt độ tổ cao kéo dài", False, False),
     (44,  "bad",   "sensor", "Nhiễm độc do thuốc — dấu hiệu ong chết ở đáy thùng", False, False),
-    (58,  "bad",   "ai",     "AI phát hiện sâu bệnh trên ảnh cửa tổ (độ tin cậy 94%)", False, False),
+    (58,  "bad",   "ai",     "AI phát hiện thiên địch trên ảnh cửa tổ (độ tin cậy 94%)", False, False),
     (92,  "bad",   "sensor", "Thiếu mật — tổ giảm cân nặng bất thường", False, False),
     (103, "bad",   "manual", "Nhiễm độc do thuốc — đã phun xử lý, chờ theo dõi", True, True),
     (123, "bad",   "ai",     "AI phát hiện ong bắp cày quanh thùng (độ tin cậy 96%)", False, False),
