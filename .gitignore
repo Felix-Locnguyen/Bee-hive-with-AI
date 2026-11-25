@@ -21,3 +21,8 @@ build/
 .pio/
 .vscode/
 PROJECT PLAN.md
+
+
+ai_engine/weights/dection_bee/
+ai_engine/notebooks/dection_bee/stock-footage-close-up-of-honeybees-warming-in-sun-on-their-beehive-beekeeping-process-honey-productio-and_predicted_yolo26s_img640_baseline_v1_small.mp4
+ai_engine/notebooks/dection_bee/stock-footage-close-up-of-honeybees-warming-in-sun-on-their-beehive-beekeeping-process-honey-productio-and.mp4
