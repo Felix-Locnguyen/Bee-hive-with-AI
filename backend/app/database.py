@@ -1,21 +1,52 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from collections.abc import AsyncIterator
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
 
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-engine = create_engine(settings.database_url, connect_args=connect_args)
+engine: AsyncEngine = create_async_engine(
+    settings.async_database_url,
+    pool_pre_ping=True,
+)
 
-SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    autoflush=False,
+    expire_on_commit=False,
+)
 
 
 class Base(DeclarativeBase):
     pass
 
 
-def get_db():
-    db = SessionLocal()
+async def get_db() -> AsyncIterator[AsyncSession]:
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+
+
+async def check_connection() -> None:
     try:
-        yield db
-    finally:
-        db.close()
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+    except Exception as exc:
+        host = settings.async_database_url.rsplit("@", 1)[-1]
+        raise RuntimeError(f"Khong ket noi duoc PostgreSQL: {host}") from exc
+
+
+async def init_db() -> None:
+    await check_connection()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

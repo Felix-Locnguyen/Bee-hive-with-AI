@@ -1,16 +1,25 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 from app.api import farms, sensors, alerts, users, hives
 from app.config import settings
-from app.database import Base, engine
+from app.database import check_connection, engine, init_db
 
 
-Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
+    await engine.dispose()
+
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
+    lifespan=lifespan,
 )
 
 app.include_router(users.router)
@@ -29,5 +38,12 @@ def root():
 
 
 @app.get("/healthz", tags=["Health"])
-def healthz():
-    return {"status": "ok"}
+async def healthz():
+    try:
+        await check_connection()
+    except RuntimeError as exc:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "database": str(exc)},
+        )
+    return {"status": "ok", "database": "up"}

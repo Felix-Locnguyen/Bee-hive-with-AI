@@ -1,7 +1,8 @@
+import asyncio
 from sqlalchemy import select
 from datetime import date, datetime, timedelta, timezone
 
-from app.database import SessionLocal
+from app.database import AsyncSessionLocal, init_db
 from app.models.hive_record import HiveRecord
 from app.models.sensor_reading import SensorReading
 
@@ -59,30 +60,30 @@ ALERTS_SEED = [
         ]
 
 
-def _seed_once(db, model, build):
-    if db.scalars(select(model)).first():
+async def _seed_once(db, model, build):
+    if (await db.scalars(select(model))).first():
         print(f"DB da co {model.__tablename__} — bo qua seed.")
         return
-    build(db)
+    await build(db)
 
 
-def _seed_hives(db):
-    if not db.scalars(select(User)).first():
+async def _seed_hives(db):
+    if not (await db.scalars(select(User))).first():
         admin = User(name="Quản trị viên", email="admin@vietbee.vn", phone="0999555888", role="admin")
         member = User(name="Anh Hùng", email="hung@vietbee.vn", phone="0912345678", role="member")
         db.add_all([admin, member])
-        db.flush()
+        await db.flush()
 
-    farm = db.scalars(select(Farm)).first()
+    farm = (await db.scalars(select(Farm))).first()
     if farm is None:
         farm = Farm(
             name="Trại ong Long Khánh",
             address="Long Khánh, Đồng Nai",
             established=date(2019, 3, 1),
-            owner_id=db.scalars(select(User).where(User.role == "admin")).first().id,
+            owner_id=(await db.scalars(select(User).where(User.role == "admin"))).first().id,
         )
         db.add(farm)
-        db.flush()
+        await db.flush()
 
     hives = []
     for i in range(1, 129):
@@ -104,12 +105,12 @@ def _seed_hives(db):
             last_check=date(2026, 9, (i % 28) + 1),
         ))
     db.add_all(hives)
-    db.commit()
+    await db.commit()
     print("Seed OK: 2 user + 1 farm + 128 hive")
 
 
-def _seed_records(db):
-    hive = db.scalars(select(Hive).where(Hive.code == "V12")).first()
+async def _seed_records(db):
+    hive = (await db.scalars(select(Hive).where(Hive.code == "V12"))).first()
     if hive is None:
         print("Khong tim thay hive V12 — bo qua seed records.")
         return
@@ -117,12 +118,12 @@ def _seed_records(db):
         HiveRecord(hive_id=hive.id, checked_at=d, record_type=t, note=n, inspector=w)
         for d, t, n, w in RECORDS_V12
     ])
-    db.commit()
+    await db.commit()
     print("Seed OK: 10 ban ghi nhan cho V12")
 
 
-def _seed_readings(db):
-    hive = db.scalars(select(Hive).where(Hive.code == "V12")).first()
+async def _seed_readings(db):
+    hive = (await db.scalars(select(Hive).where(Hive.code == "V12"))).first()
     if hive is None:
         print("khong tim thay hive v12 - bo qua seed readings")
         return
@@ -138,14 +139,14 @@ def _seed_readings(db):
             battery=95 - i // 3,
             ))
     db.add_all(readings)
-    db.commit()
+    await db.commit()
     print("Seed OK: 24 sensor readings cho V12")
 
 
-def _seed_alerts(db):
+async def _seed_alerts(db):
     alerts = []
     for hive_id, severity, source, message, is_read, done in ALERTS_SEED:
-        if db.get(Hive, hive_id) is None:
+        if await db.get(Hive, hive_id) is None:
             continue
         alerts.append(Alert(
             hive_id = hive_id,
@@ -156,20 +157,18 @@ def _seed_alerts(db):
             resolved_at=(datetime.now(timezone.utc) - timedelta(days=1)) if done else None,
         ))
     db.add_all(alerts)
-    db.commit()
+    await db.commit()
     print(f"Seed OK: {len(alerts)} canh bao mau")
 
 
-def seed():
-    db = SessionLocal()
-    try:
-        _seed_once(db, Hive, _seed_hives)
-        _seed_once(db, HiveRecord, _seed_records)
-        _seed_once(db, SensorReading, _seed_readings)
-        _seed_once(db, Alert, _seed_alerts)
-    finally:
-        db.close()
+async def seed():
+    await init_db()
+    async with AsyncSessionLocal() as db:
+        await _seed_once(db, Hive, _seed_hives)
+        await _seed_once(db, HiveRecord, _seed_records)
+        await _seed_once(db, SensorReading, _seed_readings)
+        await _seed_once(db, Alert, _seed_alerts)
 
 
 if __name__ == "__main__":
-    seed()
+    asyncio.run(seed())

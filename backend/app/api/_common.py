@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-def get_or_404(db: Session, model, entity_id: int, entity_name: str):
-    entity = db.get(model, entity_id)
+async def get_or_404(db: AsyncSession, model, entity_id: int, entity_name: str):
+    entity = await db.get(model, entity_id)
     if entity is None:
         raise HTTPException(status_code=404, detail=f"Khong tim thay {entity_name} id = {entity_id}")
     return entity
