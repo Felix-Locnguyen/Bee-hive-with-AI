@@ -70,4 +70,27 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ is_read: true }),
     }),
+
+  // 7. Cảnh báo camera AI (hive_alert)
+  getLatestHiveAlert: (hiveId) =>
+    request(`/api/hive-alerts/latest?hive_id=${hiveId}`),
+  getHiveAlertCount: (hiveId) =>
+    request(`/api/hive-alerts/count${hiveId ? '?hive_id=' + hiveId : ''}`),
+  getHiveAlerts: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.hive_id) q.set('hive_id', params.hive_id);
+    if (params.unacknowledged !== undefined) q.set('unacknowledged', params.unacknowledged);
+    if (params.limit) q.set('limit', params.limit);
+    const qs = q.toString();
+    return request(`/api/hive-alerts${qs ? '?' + qs : ''}`);
+  },
+  acknowledgeHiveAlert: (alertId) =>
+    request(`/api/hive-alerts/${alertId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_acknowledged: true }),
+    }),
+
+  // 8. Camera trực tiếp (Flow B — MJPEG)
+  createStreamToken: (hiveId) =>
+    request(`/api/cameras/${hiveId}/stream-token`, { method: 'POST' }),
 };

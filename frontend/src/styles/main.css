@@ -242,6 +242,24 @@ select{appearance:auto}
 .alertbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--soft);border-left:4px solid var(--muted);font-size:14px}
 .alertbar.bad{border-left-color:var(--bad)}.alertbar.warn{border-left-color:var(--warn)}
 .det svg{width:100%;height:auto;display:block;border-radius:12px;margin-top:10px}
+
+/* Camera AI — live stream + evidence + lightbox */
+.live-cam-wrap{min-width:0}
+.live-cam-frame{position:relative;margin-top:10px;border-radius:12px;overflow:hidden;background:#000;min-height:160px}
+.live-cam-frame.is-loading::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.35)}
+.live-cam{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#000;border-radius:12px}
+.live-cam-state{margin-top:12px;padding:16px;border-radius:12px;background:var(--soft);text-align:center;font-size:14px;color:var(--muted)}
+.live-cam-state.err{color:var(--bad)}
+.live-cam-state.err p{margin:0 0 10px;color:inherit}
+.evidence{display:flex;gap:12px;align-items:flex-start}
+.evidence-empty{padding:12px;border-radius:12px;background:var(--soft);text-align:center}
+.evidence-thumb{flex:none;padding:0;border:0;background:none;cursor:pointer;border-radius:8px;overflow:hidden;line-height:0}
+.evidence-thumb img{width:96px;height:72px;object-fit:cover;border-radius:8px;display:block;background:var(--soft)}
+.evidence-meta{min-width:0;flex:1}
+.evidence-title{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px}
+.evidence-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.evidence-actions .btn{margin-top:0}
+.lightbox-img{width:100%;max-height:60vh;object-fit:contain;border-radius:12px;background:#000;display:block;margin-top:8px}
 .qrbox{display:flex;gap:14px;align-items:center;margin-top:10px}
 .qrimg{background:#fff;padding:8px;border-radius:10px;border:1px solid var(--line);width:116px;height:116px;flex:none;display:grid;place-items:center}
 .qrimg img,.qrimg canvas{width:100%!important;height:100%!important}

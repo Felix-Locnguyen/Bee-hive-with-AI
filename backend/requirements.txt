@@ -5,3 +5,8 @@ asyncpg>=0.30
 pydantic>=2.7
 pydantic-settings>=2.3
 python-dotenv>=1.0
+# Camera AI runtime (used by app.services.ai_service + app.camera.*)
+opencv-python>=4.9
+ultralytics>=0.8
+# torch is platform-specific — install the build matching your CUDA/CPU from pytorch.org
+# torch>=2.2

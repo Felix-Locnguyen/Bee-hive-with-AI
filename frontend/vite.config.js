@@ -11,6 +11,11 @@ export default defineConfig({
         target: 'http://127.0.0.1:8005',
         changeOrigin: true,
       },
+      // Anh canh bao camera: /storage/captures/...
+      '/storage': {
+        target: 'http://127.0.0.1:8005',
+        changeOrigin: true,
+      },
     },
   },
 });
