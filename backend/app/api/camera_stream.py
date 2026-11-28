@@ -28,6 +28,7 @@ from app.config import settings
 from app.database import get_db
 from app.models.camera_config import CameraConfig
 from app.models.hive import Hive
+from app.services import ai_service
 from app.schemas.hive_alert import StreamTokenRead
 
 logger = logging.getLogger(__name__)
@@ -84,27 +85,39 @@ def _encode_jpeg(frame) -> bytes | None:
     return buf.tobytes() if ok else None
 
 
+def _annotate_next_frame(source: VideoFileSource) -> bytes | None:
+    frame = source.read_frame()
+    if frame is None:
+        return None
+    annotated = ai_service.annotate(frame, conf=0.6)
+    return _encode_jpeg(annotated)
+
+
 def _produce(source: VideoFileSource, out: "queue.Queue[bytes | None]",
-             stop: threading.Event, fps: float) -> None:
-    """Chay trong THREAD: doc frame -> JPEG -> day vao queue. Release trong finally."""
+             stop: threading.Event, fps: float, first_frame: bytes) -> None:
+    """Chay trong THREAD: YOLO annotate frame -> JPEG -> queue; release khi dung."""
     delay = 1.0 / max(1.0, fps)
     try:
+        out.put_nowait(first_frame)
         while not stop.is_set():
-            frame = source.read_frame()          # loop tai cuoi video
-            if frame is None:
+            data = _annotate_next_frame(source)  # VideoFileSource tu loop khi het video
+            if data is None:
+                logger.warning("MJPEG: khong doc/encode duoc frame tiep theo")
                 break
-            data = _encode_jpeg(frame)
-            if data is not None:
-                while True:                       # giu frame moi nhat, bo frame cu
+            while True:  # Giu frame moi nhat, bo frame cu neu client cham.
+                try:
+                    out.put_nowait(data)
+                    break
+                except queue.Full:
                     try:
-                        out.put_nowait(data)
-                        break
-                    except queue.Full:
-                        try:
-                            out.get_nowait()
-                        except queue.Empty:
-                            pass
+                        out.get_nowait()
+                    except queue.Empty:
+                        pass
             time.sleep(delay)
+    except ai_service.InferenceError as exc:
+        logger.error("MJPEG: YOLO inference that bai: %s", exc)
+    except Exception:
+        logger.exception("MJPEG: loi khi tao frame camera")
     finally:
         source.release()
 
@@ -205,12 +218,26 @@ async def camera_stream(
 
     video = Path(settings.video_dir) / cfg.video_path
     loop = asyncio.get_running_loop()
+    source: VideoFileSource | None = None
     try:
         source = await loop.run_in_executor(None, open_camera, video)
+        first_frame = await loop.run_in_executor(None, _annotate_next_frame, source)
+        if first_frame is None:
+            raise CameraError(f"Khong doc/encode duoc frame tu video: {video}")
     except CameraError as exc:
+        if source is not None:
+            source.release()
         _release_slot()
         raise HTTPException(status_code=404, detail=str(exc))
+    except ai_service.InferenceError as exc:
+        if source is not None:
+            source.release()
+        _release_slot()
+        logger.exception("hive %d: YOLO khong the xu ly frame dau tien", hive_id)
+        raise HTTPException(status_code=503, detail=f"Khong chay duoc YOLO: {exc}")
     except Exception as exc:
+        if source is not None:
+            source.release()
         _release_slot()
         logger.exception("hive %d: khong mo duoc camera", hive_id)
         raise HTTPException(status_code=500, detail=f"Khong mo duoc camera: {exc}")
@@ -218,7 +245,7 @@ async def camera_stream(
     stop = threading.Event()
     out: queue.Queue = queue.Queue(maxsize=2)
     producer = loop.run_in_executor(
-        None, _produce, source, out, stop, float(settings.mjpeg_fps)
+        None, _produce, source, out, stop, float(settings.mjpeg_fps), first_frame
     )
     session = _StreamSession(source, stop, producer, out)
 

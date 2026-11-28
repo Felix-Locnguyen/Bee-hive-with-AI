@@ -84,3 +84,18 @@ def detect(frame: np.ndarray, conf: float = 0.5) -> list[Detection]:
             )
         )
     return detections
+
+
+def annotate(frame: np.ndarray, conf: float = 0.6) -> np.ndarray:
+    """Run YOLO on one BGR frame and return its rendered bounding boxes."""
+    model = _load_model()
+    try:
+        with _infer_lock:
+            results = model.predict(source=frame, imgsz=640, conf=conf, verbose=False)
+            if not results:
+                raise InferenceError("model.predict khong tra ve ket qua")
+            return results[0].plot()
+    except InferenceError:
+        raise
+    except Exception as exc:
+        raise InferenceError(f"model.predict/plot that bai: {exc}") from exc
