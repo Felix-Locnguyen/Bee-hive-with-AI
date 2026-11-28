@@ -3,9 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { Chart, registerables } from 'chart.js';
 import { Icon } from '../components/Icons';
-import { BboxOverlay } from '../components/BboxOverlay';
 import { LiveCameraSheet } from '../components/LiveCameraSheet';
-import { EvidenceAlert } from '../components/EvidenceAlert';
 import { useApp } from '../context/AppContext';
 import { HIVES_FALLBACK, STAGE, rng } from '../services/mockData';
 import { api } from '../services/api';
@@ -85,11 +83,6 @@ export function HiveDetail() {
   const [formNote, setFormNote] = useState('');
   const [formErr, setFormErr] = useState('');
 
-  // Camera AI — latest evidence (poll)
-  const [latestAlert, setLatestAlert] = useState(null);
-  const [alertLoading, setAlertLoading] = useState(true);
-  const [alertErr, setAlertErr] = useState('');
-
   const qrCanvasRef = useRef(null);
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
@@ -109,33 +102,6 @@ export function HiveDetail() {
         }
       })
       .catch(() => {});
-  }, [hiveId]);
-
-  // Poll bằng chứng camera AI (8s) — chỉ khi còn ở HiveDetail
-  useEffect(() => {
-    let alive = true;
-
-    const fetchLatest = async () => {
-      try {
-        const data = await api.getLatestHiveAlert(hiveId);
-        if (!alive) return;
-        setLatestAlert(data ?? null);
-        setAlertErr('');
-      } catch (err) {
-        if (!alive) return;
-        setAlertErr(err.message || 'Không tải được bằng chứng camera.');
-      } finally {
-        if (alive) setAlertLoading(false);
-      }
-    };
-
-    setAlertLoading(true);
-    fetchLatest();
-    const interval = setInterval(fetchLatest, 8000);
-    return () => {
-      alive = false;
-      clearInterval(interval);
-    };
   }, [hiveId]);
 
   // Vẽ mã QR
@@ -243,48 +209,9 @@ export function HiveDetail() {
   };
 
   const handleOpenLiveCam = () => {
-    openSheet(<LiveCameraSheet hiveId={hiveId} onClose={closeSheet} />);
-  };
-
-  const handleAckAlert = async (alert) => {
-    try {
-      await api.acknowledgeHiveAlert(alert.id);
-      setLatestAlert((prev) =>
-        prev && prev.id === alert.id
-          ? {
-              ...prev,
-              is_acknowledged: true,
-              acknowledged_at: new Date().toISOString(),
-            }
-          : prev
-      );
-      showToast('Đã đánh dấu xử lý');
-    } catch (err) {
-      showToast(err.message || 'Không xử lý được');
-    }
-  };
-
-  const handleEnlargeAlert = (alert) => {
     openSheet(
-      <div className="lightbox">
-        <div className="hd">
-          <h3>
-            {alert.alert_type} · {Math.round((alert.confidence || 0) * 100)}%
-          </h3>
-          <button className="ibtn" onClick={closeSheet} aria-label="Đóng">
-            <Icon name="close" size={20} />
-          </button>
-        </div>
-        <img
-          className="lightbox-img"
-          src={alert.image_url}
-          alt={`Bằng chứng ${alert.alert_type}`}
-        />
-        <div className="hint" style={{ marginTop: 8 }}>
-          {new Date(alert.created_at).toLocaleString('vi-VN')}
-          {alert.is_acknowledged ? ' · Đã xử lý' : ' · Chưa xử lý'}
-        </div>
-      </div>
+      <LiveCameraSheet hiveId={hiveId} onClose={closeSheet} />,
+      { fullScreen: true }
     );
   };
 
@@ -473,45 +400,18 @@ export function HiveDetail() {
         </div>
       </section>
 
-      <section className="card det">
+      <section className="card camera-ai-card">
         <div className="hd">
-          <h2>Camera AI · Sinh vật lạ</h2>
-          {latestAlert && !latestAlert.is_acknowledged && (
-            <span className="st bad">
-              <i /> Cảnh báo
-            </span>
-          )}
+          <h2>Camera AI</h2>
         </div>
-
-        <button type="button" className="btn" onClick={handleOpenLiveCam}>
-          <Icon name="cam" size={16} />
-          Kiểm tra ong
+        <button type="button" className="camera-launch-card" onClick={handleOpenLiveCam}>
+          <span className="camera-launch-icon"><Icon name="cam" size={18} /></span>
+          <span className="camera-launch-copy">
+            <strong>Kiểm tra ong</strong>
+            <small>Mở camera trực tiếp toàn màn hình</small>
+          </span>
+          <Icon name="chev" size={18} />
         </button>
-
-        <div style={{ marginTop: 12 }}>
-          <EvidenceAlert
-            alert={latestAlert}
-            loading={alertLoading}
-            onAck={handleAckAlert}
-            onEnlarge={handleEnlargeAlert}
-          />
-        </div>
-
-        {alertErr && !latestAlert && (
-          <div className="hint" style={{ marginTop: 8 }} role="alert">
-            {alertErr}
-          </div>
-        )}
-
-        {/* Fallback mock chỉ khi backend chưa có dữ liệu evidence */}
-        {!latestAlert && !alertLoading && hive.det && (
-          <div style={{ marginTop: 12 }}>
-            <BboxOverlay detection={hive.det} hiveCode={hive.code} minsAgo={hive.mins} />
-            <div className="hint" style={{ marginTop: 8 }}>
-              {hive.det.label} · độ tin cậy {hive.det.conf}% · ảnh mẫu từ camera thùng
-            </div>
-          </div>
-        )}
       </section>
 
       <section className="card">

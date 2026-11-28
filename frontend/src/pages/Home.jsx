@@ -2,8 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Chart, registerables } from 'chart.js';
 import { Icon } from '../components/Icons';
+import { EvidenceAlert } from '../components/EvidenceAlert';
 import { DATA, MONTHS, todayLabel, HIVES_FALLBACK } from '../services/mockData';
 import { api } from '../services/api';
+import { useApp } from '../context/AppContext';
 
 Chart.register(...registerables);
 
@@ -21,6 +23,7 @@ const sgn = (n, d = 1) => (n >= 0 ? '+' : '−') + Math.abs(n).toFixed(d);
 
 export function Home() {
   const navigate = useNavigate();
+  const { showToast } = useApp();
   const [counts, setCounts] = useState(() => {
     const c = { ok: 0, warn: 0, bad: 0 };
     HIVES_FALLBACK.forEach((h) => {
@@ -29,6 +32,10 @@ export function Home() {
     });
     return c;
   });
+  const [threatAlerts, setThreatAlerts] = useState([]);
+  const [threatHives, setThreatHives] = useState({});
+  const [threatLoading, setThreatLoading] = useState(true);
+  const [threatError, setThreatError] = useState('');
 
   const chColRef = useRef(null);
   const chHoneyRef = useRef(null);
@@ -47,6 +54,52 @@ export function Home() {
         }
       })
       .catch(() => {});
+  }, []);
+
+  const handleDeleteThreat = async (alert) => {
+    try {
+      await api.deleteHiveAlert(alert.id);
+      setThreatAlerts((current) => current.filter((item) => item.id !== alert.id));
+      showToast('Đã xóa ảnh phát hiện');
+      return true;
+    } catch (error) {
+      showToast(error.message || 'Không xóa được ảnh phát hiện');
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchThreats = async () => {
+      try {
+        const [alerts, hives] = await Promise.all([
+          api.getHiveAlerts({ limit: 500 }),
+          api.getHives(),
+        ]);
+        if (!active) return;
+        const hornetAlerts = (Array.isArray(alerts) ? alerts : []).filter((alert) => {
+          const type = (alert.alert_type || '').toLocaleLowerCase();
+          return type.includes('hornet') || type.includes('ong bắp cày');
+        });
+        setThreatAlerts(hornetAlerts);
+        setThreatHives(
+          Object.fromEntries((Array.isArray(hives) ? hives : []).map((hive) => [hive.id, hive]))
+        );
+        setThreatError('');
+      } catch (error) {
+        if (active) setThreatError(error.message || 'Không tải được ảnh phát hiện.');
+      } finally {
+        if (active) setThreatLoading(false);
+      }
+    };
+
+    fetchThreats();
+    const interval = setInterval(fetchThreats, 8000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const f = DATA.farm;
@@ -313,6 +366,22 @@ export function Home() {
             ))}
             <li className="hint">{tot} thùng</li>
           </ul>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="hd">
+          <h2>Phát hiện mối đe dọa</h2>
+          {threatAlerts.length > 0 && <span className="hint">{threatAlerts.length} ảnh</span>}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <EvidenceAlert
+            alerts={threatAlerts}
+            hivesById={threatHives}
+            loading={threatLoading}
+            error={threatError}
+            onDelete={handleDeleteThreat}
+          />
         </div>
       </section>
 
