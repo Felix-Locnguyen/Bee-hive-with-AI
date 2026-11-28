@@ -67,9 +67,13 @@ export function LiveCameraSheet({ hiveId, onClose }) {
 
   const handleImgError = () => {
     if (!aliveRef.current) return;
+    requestIdRef.current += 1;
     setLoading(false);
-    setError('Mất kết nối luồng video. Đóng và mở lại để thử.');
-    stopStream();
+    setError('Không nhận được luồng camera. Có thể đã đạt giới hạn xem đồng thời; hãy đóng camera khác rồi thử lại.');
+    if (imgRef.current) {
+      imgRef.current.src = '';
+    }
+    setStreamUrl('');
   };
 
   return (
