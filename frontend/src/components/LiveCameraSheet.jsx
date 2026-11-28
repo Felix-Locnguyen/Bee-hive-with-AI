@@ -62,16 +62,16 @@ export function LiveCameraSheet({ hiveId, onClose }) {
   };
 
   return (
-    <div className="live-cam-wrap">
-      <div className="hd">
-        <h3>Camera trực tiếp</h3>
+    <div className="live-cam-fullscreen">
+      <header className="live-cam-fullscreen-head">
+        <div>
+          <strong>Camera trực tiếp</strong>
+          <span>Thùng {hiveId} · Đang phát video</span>
+        </div>
         <button className="ibtn" onClick={onClose} aria-label="Đóng">
           <Icon name="close" size={20} />
         </button>
-      </div>
-      <div className="hint" style={{ marginTop: 4 }}>
-        Thùng {hiveId} · xem live khi bấm “Kiểm tra ong”
-      </div>
+      </header>
 
       {loading && !error && (
         <div className="live-cam-state" role="status">
@@ -90,7 +90,7 @@ export function LiveCameraSheet({ hiveId, onClose }) {
       )}
 
       {!error && (
-        <div className={`live-cam-frame ${loading ? 'is-loading' : ''}`}>
+        <div className={`live-cam-frame fullscreen ${loading ? 'is-loading' : ''}`}>
           {streamUrl && (
             <img
               ref={imgRef}

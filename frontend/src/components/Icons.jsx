@@ -50,6 +50,12 @@ const ICONS = {
   ),
   plus: <path d="M12 5v14M5 12h14" />,
   close: <path d="M6 6l12 12M18 6L6 18" />,
+  trash: (
+    <>
+      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+      <path d="M10 11v5M14 11v5" />
+    </>
+  ),
   home: <path d="M3 11l9-8 9 8M5 10v10h14V10" />,
   box: <path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8" />,
   wallet: <path d="M3 7a2 2 0 0 1 2-2h13v4M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2M16 14.5h.01" />,

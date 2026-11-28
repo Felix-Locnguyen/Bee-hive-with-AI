@@ -11,7 +11,7 @@ const AppContext = createContext();
 
 export function AppProvider({ children }) {
   // Global Sheet & Toast
-  const [sheet, setSheet] = useState({ isOpen: false, content: null });
+  const [sheet, setSheet] = useState({ isOpen: false, content: null, fullScreen: false });
   const [toastMsg, setToastMsg] = useState('');
   const [toastTimer, setToastTimer] = useState(null);
 
@@ -77,12 +77,12 @@ export function AppProvider({ children }) {
     return () => clearInterval(interval);
   }, []);
 
-  const openSheet = (content) => {
-    setSheet({ isOpen: true, content });
+  const openSheet = (content, { fullScreen = false } = {}) => {
+    setSheet({ isOpen: true, content, fullScreen });
   };
 
   const closeSheet = () => {
-    setSheet({ isOpen: false, content: null });
+    setSheet({ isOpen: false, content: null, fullScreen: false });
   };
 
   const showToast = (msg) => {

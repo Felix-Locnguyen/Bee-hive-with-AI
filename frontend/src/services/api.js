@@ -89,6 +89,8 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ is_acknowledged: true }),
     }),
+  deleteHiveAlert: (alertId) =>
+    request(`/api/hive-alerts/${alertId}`, { method: 'DELETE' }),
 
   // 8. Camera trực tiếp (Flow B — MJPEG)
   createStreamToken: (hiveId) =>

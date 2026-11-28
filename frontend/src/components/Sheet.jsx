@@ -22,7 +22,7 @@ export function Sheet() {
         onClick={closeSheet}
       />
       <div
-        className={`sheet ${sheet.isOpen ? 'on' : ''}`}
+        className={`sheet ${sheet.isOpen ? 'on' : ''} ${sheet.fullScreen ? 'sheet-fullscreen' : ''}`}
         id="sheet"
         role="dialog"
         aria-modal="true"
