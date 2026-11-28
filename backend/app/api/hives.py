@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.camera.seed import sync_hive_camera_config
 from app.database import get_db
 from app.models.farm import Farm
 from app.models.hive import Hive
@@ -73,6 +74,9 @@ async def create_hive(data: HiveCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Ma so hive da ton tai")
     hive = Hive(**data.model_dump())
     db.add(hive)
+    await db.flush()
+    if not await sync_hive_camera_config(db, hive):
+        raise HTTPException(status_code=503, detail="Không tìm thấy video demo phù hợp với trạng thái thùng.")
     await db.commit()
     await db.refresh(hive)
     return hive
@@ -86,6 +90,8 @@ async def update_hive(hive_id: int, data: HiveUpdate, db: AsyncSession = Depends
         raise HTTPException(status_code=409, detail="Ma so hive da ton tai")
     for key, value in fields.items():
         setattr(hive,key,value)
+    if "status" in fields and not await sync_hive_camera_config(db, hive):
+        raise HTTPException(status_code=503, detail="Không tìm thấy video demo phù hợp với trạng thái thùng.")
     await db.commit()
     await db.refresh(hive)
     return hive

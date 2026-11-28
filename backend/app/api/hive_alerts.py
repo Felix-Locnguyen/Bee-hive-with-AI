@@ -1,6 +1,7 @@
 """API canh bao camera (hive_alert) — chi doc/acknowledge, worker la nguoi ghi."""
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -14,6 +15,7 @@ from app.models.hive_alert import HiveAlert
 from app.schemas.hive_alert import HiveAlertRead, HiveAlertUpdate
 
 router = APIRouter(prefix="/api/hive-alerts", tags=["HiveAlerts"])
+logger = logging.getLogger(__name__)
 
 
 def _to_read(alert: HiveAlert) -> HiveAlertRead:
@@ -91,3 +93,20 @@ async def acknowledge_hive_alert(
     await db.commit()
     await db.refresh(alert)
     return _to_read(alert)
+
+
+@router.delete("/{alert_id}")
+async def delete_hive_alert(alert_id: int, db: AsyncSession = Depends(get_db)):
+    """Delete an alert record and its stored evidence image."""
+    alert = await _get_or_404(db, alert_id)
+    try:
+        storage.remove_capture(alert.image_path)
+    except (OSError, ValueError) as exc:
+        logger.exception("Khong xoa duoc anh hive_alert %d", alert_id)
+        raise HTTPException(
+            status_code=500, detail="Không thể xóa ảnh phát hiện."
+        ) from exc
+
+    await db.delete(alert)
+    await db.commit()
+    return {"deleted": True}
