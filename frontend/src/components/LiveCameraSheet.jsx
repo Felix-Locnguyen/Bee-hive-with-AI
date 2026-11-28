@@ -12,8 +12,12 @@ export function LiveCameraSheet({ hiveId, onClose }) {
   const [loading, setLoading] = useState(true);
   const imgRef = useRef(null);
   const aliveRef = useRef(true);
+  const requestIdRef = useRef(0);
 
   const stopStream = useCallback(() => {
+    requestIdRef.current += 1;
+    setLoading(false);
+    setError('');
     if (imgRef.current) {
       imgRef.current.src = '';
     }
@@ -21,15 +25,19 @@ export function LiveCameraSheet({ hiveId, onClose }) {
   }, []);
 
   const startStream = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError('');
-    stopStream();
+    setStreamUrl('');
+    if (imgRef.current) {
+      imgRef.current.src = '';
+    }
     try {
       const data = await api.createStreamToken(hiveId);
-      if (!aliveRef.current) return;
+      if (!aliveRef.current || requestId !== requestIdRef.current) return;
       setStreamUrl(data.stream_url);
     } catch (err) {
-      if (!aliveRef.current) return;
+      if (!aliveRef.current || requestId !== requestIdRef.current) return;
       const status = err.status;
       if (status === 404) {
         setError('Chưa có camera cho thùng này hoặc file video không tồn tại.');
@@ -50,9 +58,12 @@ export function LiveCameraSheet({ hiveId, onClose }) {
     startStream();
     return () => {
       aliveRef.current = false;
-      stopStream();
+      requestIdRef.current += 1;
+      if (imgRef.current) {
+        imgRef.current.src = '';
+      }
     };
-  }, [startStream, stopStream]);
+  }, [startStream]);
 
   const handleImgError = () => {
     if (!aliveRef.current) return;
@@ -64,13 +75,28 @@ export function LiveCameraSheet({ hiveId, onClose }) {
   return (
     <div className="live-cam-fullscreen">
       <header className="live-cam-fullscreen-head">
-        <div>
+        <div className="live-cam-title">
           <strong>Camera trực tiếp</strong>
-          <span>Thùng {hiveId} · Đang phát video</span>
+          <span>Thùng {hiveId} · YOLO nhận diện trực tiếp</span>
         </div>
-        <button className="ibtn" onClick={onClose} aria-label="Đóng">
-          <Icon name="close" size={20} />
-        </button>
+        <div className="live-cam-controls">
+          {streamUrl ? (
+            <button className="btn sm ghost live-cam-toggle" onClick={stopStream}>
+              Tắt camera
+            </button>
+          ) : (
+            <button
+              className="btn sm ghost live-cam-toggle"
+              onClick={startStream}
+              disabled={loading}
+            >
+              {loading ? 'Đang mở…' : 'Bật camera'}
+            </button>
+          )}
+          <button className="ibtn" onClick={onClose} aria-label="Đóng">
+            <Icon name="close" size={20} />
+          </button>
+        </div>
       </header>
 
       {loading && !error && (

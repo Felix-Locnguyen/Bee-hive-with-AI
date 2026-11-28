@@ -281,9 +281,12 @@ select{appearance:auto}
 .sheet-fullscreen .grab{display:none}
 .live-cam-fullscreen{display:flex;flex-direction:column;width:100%;height:100%;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);background:#070807;color:#fff}
 .live-cam-fullscreen-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.14)}
-.live-cam-fullscreen-head>div{display:grid;gap:2px;flex:1;min-width:0}
+.live-cam-fullscreen-head .live-cam-title{display:grid;gap:2px;flex:1;min-width:0}
 .live-cam-fullscreen-head strong{font-size:15px}
 .live-cam-fullscreen-head span{color:rgba(255,255,255,.68);font-size:12px}
+.live-cam-controls{display:flex;align-items:center;gap:8px;flex:none}
+.live-cam-controls .live-cam-toggle{color:#fff;background:rgba(255,255,255,.12);padding:0 10px}
+.live-cam-controls .live-cam-toggle:disabled{opacity:.55;cursor:default}
 .live-cam-fullscreen-head .ibtn{width:42px;height:42px;border:1px solid rgba(255,255,255,.24);border-radius:50%;color:#fff}
 .live-cam-fullscreen-head .ibtn:hover{background:rgba(255,255,255,.18)}
 .live-cam-fullscreen .live-cam-state{margin:16px;background:#161916;color:rgba(255,255,255,.7)}
