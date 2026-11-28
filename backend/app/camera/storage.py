@@ -94,6 +94,15 @@ def delete_capture(relative_path: str) -> None:
         logger.warning("Khong xoa duoc anh %s: %s", relative_path, exc)
 
 
+def remove_capture(relative_path: str) -> None:
+    """Remove a capture owned by this app, raising when the stored path is invalid."""
+    root = captures_root().resolve()
+    path = (Path(settings.storage_dir) / relative_path).resolve()
+    if root not in path.parents:
+        raise ValueError("Đường dẫn ảnh không nằm trong thư mục captures.")
+    path.unlink()
+
+
 async def enforce_retention(db: AsyncSession, hive_id: int) -> int:
     """Giu toi da settings.max_images_per_hive anh moi thùng.
 

@@ -9,7 +9,7 @@ class CameraConfig(Base):
     """Cau hinh camera mo phong (Demo v1) cho 1 thùng ong.
 
     - video_path: duong dan TUONG DOI doi voi thu muc video (0_DEMO_VIDEO/).
-    - demo_timestamps: cac moc giay trong video co "ong bap cay" — chi dung khi DEMO_MODE=true.
+    - demo_timestamps: legacy field retained for existing database compatibility.
     """
 
     __tablename__ = "camera_config"

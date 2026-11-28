@@ -4,7 +4,7 @@ Thiet ke:
 - 1 asyncio task moi thùng + 1 scheduler (15s) quan ly task theo camera_config
   (them/tat/bot thùng, doi interval/video -> ap dung ngay, khong can restart).
 - Moi tick co per-hive lock: tick truoc chua xong -> bo qua tick nay.
-- Moi tick: mo video -> lay 3-5 khung (demo: lay dung moc giay co thien dich)
+- Moi tick: mo video -> lay 3-5 khung phan bo tren video cua rieng thùng
   -> inference trong ThreadPoolExecutor -> release VideoCapture NGAY.
 - Moi loi (file thieu, doc that bai, model that bai/qua nhan) deu duoc log
   va khong bao gio khoi dong worker.
@@ -49,7 +49,6 @@ class ScanJob:
     video_path: str
     scan_interval_sec: int
     confidence_threshold: float
-    demo_timestamps: tuple[float, ...]
 
 
 @dataclass
@@ -67,16 +66,7 @@ def _scan_sync(job: ScanJob) -> ScanResult | None:
     video = Path(settings.video_dir) / job.video_path
     try:
         with open_camera(video) as source:
-            if settings.demo_mode and job.demo_timestamps:
-                frames = [
-                    f for f in (
-                        source.read_frame(source.frame_index_at(t))
-                        for t in job.demo_timestamps
-                    )
-                    if f is not None
-                ]
-            else:
-                frames = source.sample_frames(settings.scan_frames, gap_sec=3.0)
+            frames = source.sample_frames(settings.scan_frames, gap_sec=3.0)
     except CameraError as exc:
         logger.warning("hive %d: %s", job.hive_id, exc)
         return None
@@ -190,7 +180,6 @@ class CameraWorker:
                 video_path=cfg.video_path,
                 scan_interval_sec=cfg.scan_interval_sec,
                 confidence_threshold=cfg.confidence_threshold,
-                demo_timestamps=tuple(cfg.demo_timestamps or ()),
             )
 
     async def _hive_loop(self, hive_id: int) -> None:
